@@ -15,11 +15,16 @@
  */
 package de.innoq.jenkins.rootcause;
 
-import hudson.model.Run;
 import hudson.model.RunAction;
+import hudson.model.Run;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RootCauseAction implements RunAction {
 
+	private static final Logger logger = Logger.getLogger(RootCauseAction.class.getName());
+	
 	public String getIconFileName() {
 		// no icon
 		return null;
@@ -34,22 +39,20 @@ public class RootCauseAction implements RunAction {
 	}
 
 	public void onLoad() {
-		System.out.println ("Root Cause Action Load");
+		// NOP		
 	}
 
 	public void onAttached(Run r) {
-		System.out.println ("Root Cause Action Attached");
+		logger.log(Level.FINEST, "Root Cause Logger was attached to {0}",r.getFullDisplayName());
 	}
 
 	public void onBuildComplete() {
-		System.out.println ("Root Cause Action Build Completed");
-
+		// NOP
 	}
 
 
 // Overall Todos:	
 
-//	TODO Remove usage of System.out.println, Findout out howto log in jenkins
 //	TODO Setup Unit/Integration Tests with Jenkins Test Harness
 //  TODO Setup Proper Naming / Internationalization for existing Labels
 //  TODO Implement actually finding out (and displaying) the root cause

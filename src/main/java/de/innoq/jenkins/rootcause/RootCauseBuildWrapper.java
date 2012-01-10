@@ -24,6 +24,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -32,8 +33,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  *
  */
 public class RootCauseBuildWrapper extends BuildWrapper {
-
-
+	
 	@Override
 	public Environment setUp(AbstractBuild build, Launcher launcher,
 			BuildListener listener) throws IOException, InterruptedException {
@@ -50,9 +50,7 @@ public class RootCauseBuildWrapper extends BuildWrapper {
 	@Override
 	public void preCheckout(AbstractBuild build, Launcher launcher,
 			BuildListener listener) throws IOException, InterruptedException {
-
 		build.addAction(new RootCauseAction());
-		System.out.println ("Pre Checkout was called on the RootCauseBuildWrapper!");
 		super.preCheckout(build, launcher, listener);
 	}
 	
