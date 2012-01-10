@@ -53,7 +53,6 @@ public class RootCauseAction implements RunAction {
 
 // Overall Todos:	
 
-//	TODO Setup Unit/Integration Tests with Jenkins Test Harness
 //  TODO Setup Proper Naming / Internationalization for existing Labels
 //  TODO Implement actually finding out (and displaying) the root cause
 //  TODO Create Github Readme file
