@@ -30,11 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import de.innoq.jenkins.rootcause.RootCauseAction.RootCause;
 
 public class RootCauseAction implements RunAction {
 
@@ -79,24 +76,27 @@ public class RootCauseAction implements RunAction {
 	public synchronized List<RootCause> getCauses() {
 		if (causes == null) {
 			List<RootCause> rootCauses = new ArrayList<RootCause>();
-			collectRootCauses(rootCauses , run);
+			collectRootCauses(rootCauses , new HashSet<String>(), run);
 			causes = rootCauses;
 		}
 		return causes;
 	}
 
-	private void collectRootCauses (List<RootCause> rootCauses, Run run) {
+	private void collectRootCauses (List<RootCause> rootCauses, Set<String> projectsHandled, Run run) {
 		CauseAction causeAction = run.getAction(CauseAction.class);
 		Map<Cause, Integer> currentCauses = causeAction.getCauseCounts();
 		RootCause rootCause = null;
 		boolean isLeave = false;
+		projectsHandled.add (run.getParent().getName());
 		for (Entry <Cause,Integer> currentCauseCount : currentCauses.entrySet()) {
 			if (currentCauseCount.getKey() instanceof UpstreamCause) {
-				UpstreamCause uc = (UpstreamCause) currentCauseCount.getKey();
-				AbstractProject p = (AbstractProject) Hudson.getInstance()
-						.getItem(uc.getUpstreamProject());
-				Run upstreamRun = p.getBuildByNumber(uc.getUpstreamBuild());
-				collectRootCauses (rootCauses, upstreamRun);
+				UpstreamCause uc = (UpstreamCause) currentCauseCount.getKey();				
+				if (!projectsHandled.contains (uc.getUpstreamProject())) {
+					AbstractProject p = (AbstractProject) Hudson.getInstance()
+							.getItem(uc.getUpstreamProject());
+					Run upstreamRun = p.getBuildByNumber(uc.getUpstreamBuild());
+					collectRootCauses (rootCauses, projectsHandled, upstreamRun);
+				}
 				
 			} else {
 				if (rootCause == null) {
@@ -193,10 +193,9 @@ public class RootCauseAction implements RunAction {
 	
 	// Overall Todos:
 
-	// TODO Implement actually finding out (and displaying) the root cause
+	// TODO Render Project/Build References as link
 	//
-	// TODO Check for Concurrency Problems / synchronize RootCauseACtion
-	// TODO Check Persistent behaviour / xml Files
+	// TODO Check Persistent behaviour / xml Files, Remove FullClassnames
 	// TODO Setup Proper Naming / Internationalization for existing Labels
 	// TODO Create Github Readme file
 	// TODO Setup Maven Metadata (License, Developer Connection and so on)
