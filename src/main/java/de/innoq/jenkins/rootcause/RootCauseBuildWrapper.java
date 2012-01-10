@@ -24,7 +24,6 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 
 import java.io.IOException;
-import java.util.logging.Logger;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
