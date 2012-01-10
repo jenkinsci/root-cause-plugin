@@ -22,6 +22,8 @@ import hudson.util.OneShotEvent;
 import org.jvnet.hudson.test.HudsonTestCase;
 import org.jvnet.hudson.test.TestBuilder;
 
+import de.innoq.jenkins.rootcause.RootCauseAction.RootCause;
+
 public class RootCauseActionTest extends HudsonTestCase {
 
 	public void testBuildWrapperAddsAction() throws Exception {
@@ -75,9 +77,9 @@ public class RootCauseActionTest extends HudsonTestCase {
 		System.out.println("Done Building");
 		RootCauseAction rootCauseAction = build
 				.getAction(RootCauseAction.class);
-		List<Cause> result = rootCauseAction.getCauses();
+		List<RootCause> result = rootCauseAction.getCauses();
 		assertEquals(1, result.size());
-		assertEquals(rootCause, result.get(0));
+		assertEquals(rootCause, result.get(0).getCauseCount().keySet().iterator().next());
 		System.out.println(result);
 	}
 

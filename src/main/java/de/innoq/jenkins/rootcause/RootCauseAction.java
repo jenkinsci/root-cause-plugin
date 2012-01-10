@@ -25,18 +25,24 @@ import hudson.model.Run;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import de.innoq.jenkins.rootcause.RootCauseAction.RootCause;
+
 public class RootCauseAction implements RunAction {
 
-	private static final Logger logger = Logger.getLogger(RootCauseAction.class.getName());
-	private List<Cause> causes = null;
+	private static final Logger logger = Logger.getLogger(RootCauseAction.class
+			.getName());
+	private List<RootCause> causes = null;
 	private Run run;
-	
+
 	public String getIconFileName() {
 		// no icon
 		return null;
@@ -51,60 +57,148 @@ public class RootCauseAction implements RunAction {
 	}
 
 	public void onLoad() {
-		// NOP		
+		// NOP
 	}
 
 	public void onAttached(Run r) {
 		this.run = r;
-		logger.log(Level.FINEST, "Root Cause Logger was attached to {0}",r.getFullDisplayName());
+		logger.log(Level.FINEST, "Root Cause Logger was attached to {0}",
+				r.getFullDisplayName());
 	}
 
 	public void onBuildComplete() {
 		// This is never called , JENKINS-12359
 	}
-
 	
-	public synchronized List<Cause> getCauses() {
+	/**
+	 * Each Build can have multiple Causes. Each cause can be seen multiple times.
+	 * 
+	 * Multiples are only relevant for leaves.
+	 * @return
+	 */
+	public synchronized List<RootCause> getCauses() {
 		if (causes == null) {
-			causes = new ArrayList<Cause>();
-			CauseAction causeAction = run.getAction(CauseAction.class);
-			
-			Stack<Cause> causesToVisit=  new Stack<Cause> ();
-			causesToVisit.addAll(causeAction.getCauses());
-			Set<Cause> marked = new HashSet<Cause>();
-			marked.addAll(causesToVisit);
-			while (!causesToVisit.isEmpty()) {
-				
-				Cause cause = causesToVisit.pop();
-				if (cause instanceof UpstreamCause) {
-					
-					UpstreamCause uc = (UpstreamCause) cause;
-					AbstractProject p = (AbstractProject) Hudson.getInstance().getItem (uc.getUpstreamProject());
-					Run upstreamRun = p.getBuildByNumber(uc.getUpstreamBuild());
-					
-					CauseAction upstreamCauseAction = upstreamRun.getAction(CauseAction.class);
-					for (Cause upstreamCause : upstreamCauseAction.getCauses()) {
-						if (!marked.contains(upstreamCause)) {
-							marked.add(upstreamCause);
-							causesToVisit.add(upstreamCause);
-						}
-					}
-				} else {
-					causes.add(cause);
-				}
-			}
+			List<RootCause> rootCauses = new ArrayList<RootCause>();
+			collectRootCauses(rootCauses , run);
+			causes = rootCauses;
 		}
 		return causes;
 	}
 
-// Overall Todos:	
+	private void collectRootCauses (List<RootCause> rootCauses, Run run) {
+		CauseAction causeAction = run.getAction(CauseAction.class);
+		Map<Cause, Integer> currentCauses = causeAction.getCauseCounts();
+		RootCause rootCause = null;
+		boolean isLeave = false;
+		for (Entry <Cause,Integer> currentCauseCount : currentCauses.entrySet()) {
+			if (currentCauseCount.getKey() instanceof UpstreamCause) {
+				UpstreamCause uc = (UpstreamCause) currentCauseCount.getKey();
+				AbstractProject p = (AbstractProject) Hudson.getInstance()
+						.getItem(uc.getUpstreamProject());
+				Run upstreamRun = p.getBuildByNumber(uc.getUpstreamBuild());
+				collectRootCauses (rootCauses, upstreamRun);
+				
+			} else {
+				if (rootCause == null) {
+					rootCause = new RootCause();
+					rootCauses.add(rootCause);
+					rootCause.setProject(run.getParent().getName());
+					rootCause.setBuild(run.getNumber());
+				}
+				rootCause.getCauseCount().put(currentCauseCount.getKey(), currentCauseCount.getValue());
+			}
+		} 
+	}
+	
+	
+	public static class RootCause {
+		
+		public String getProject() {
+			return project;
+		}
 
-//  TODO Implement actually finding out (and displaying) the root cause
-// 
-//	TODO Check for Concurrency Problems / synchronize RootCauseACtion 	
-// TODO Check Persistent behaviour / xml Files
-//  TODO Setup Proper Naming / Internationalization for existing Labels	
-//  TODO Create Github Readme file
-//  TODO Setup Maven Metadata (License, Developer Connection and so on)
+		public void setProject(String project) {
+			this.project = project;
+		}
+
+		public int getBuild() {
+			return build;
+		}
+
+		public void setBuild(int i) {
+			this.build = i;
+		}
+
+		public Map<Cause, Integer> getCauseCount() {
+			return causeCount;
+		}
+
+		public void setCauseCount(Map<Cause, Integer> causeCount) {
+			this.causeCount = causeCount;
+		}
+
+		
+
+		private String project;
+		private int build;
+		private Map<Cause, Integer> causeCount = new LinkedHashMap<Cause, Integer>();
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + build;
+			result = prime * result
+					+ ((causeCount == null) ? 0 : causeCount.hashCode());
+			result = prime * result
+					+ ((project == null) ? 0 : project.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			RootCause other = (RootCause) obj;
+			if (build != other.build) {
+				return false;
+			}
+			if (causeCount == null) {
+				if (other.causeCount != null) {
+					return false;
+				}
+			} else if (!causeCount.equals(other.causeCount)) {
+				return false;
+			}
+			if (project == null) {
+				if (other.project != null) {
+					return false;
+				}
+			} else if (!project.equals(other.project)) {
+				return false;
+			}
+			return true;
+		}
+	
+
+		
+	}
+	
+	
+	// Overall Todos:
+
+	// TODO Implement actually finding out (and displaying) the root cause
+	//
+	// TODO Check for Concurrency Problems / synchronize RootCauseACtion
+	// TODO Check Persistent behaviour / xml Files
+	// TODO Setup Proper Naming / Internationalization for existing Labels
+	// TODO Create Github Readme file
+	// TODO Setup Maven Metadata (License, Developer Connection and so on)
 
 }
