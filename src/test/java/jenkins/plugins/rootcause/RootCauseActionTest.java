@@ -1,4 +1,4 @@
-package de.innoq.jenkins.rootcause;
+package jenkins.plugins.rootcause;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.Result;
@@ -9,9 +9,12 @@ import hudson.tasks.BuildTrigger;
 import java.util.Collections;
 import java.util.List;
 
+import jenkins.plugins.rootcause.RootCauseAction;
+import jenkins.plugins.rootcause.RootCauseBuildWrapper;
+import jenkins.plugins.rootcause.RootCauseAction.RootCause;
+
 import org.jvnet.hudson.test.HudsonTestCase;
 
-import de.innoq.jenkins.rootcause.RootCauseAction.RootCause;
 
 public class RootCauseActionTest extends HudsonTestCase {
 
