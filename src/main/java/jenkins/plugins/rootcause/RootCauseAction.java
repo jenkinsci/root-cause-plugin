@@ -24,6 +24,10 @@ import hudson.model.Hudson;
 import hudson.model.Run;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,14 +38,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * This Action is attached to a single Run/Build. It contributes a summary.jelly which displays the root causes on the build overview page.
- *
+ * This Action is attached to a single Run/Build. It contributes a summary.jelly
+ * which displays the root causes on the build overview page.
+ * 
  */
 public class RootCauseAction implements RunAction {
 
 	private static final Logger logger = Logger.getLogger(RootCauseAction.class
 			.getName());
-	private List<RootCause> causes = null;
+	private Collection<RootCause> causes = null;
 	private Run run;
 
 	public String getIconFileName() {
@@ -79,39 +84,42 @@ public class RootCauseAction implements RunAction {
 	 * 
 	 * @return
 	 */
-	public synchronized List<RootCause> getCauses() {
+	public synchronized Collection<RootCause> getCauses() {
 		if (causes == null) {
-			List<RootCause> rootCauses = new ArrayList<RootCause>();
-			collectRootCauses(rootCauses, new HashSet<String>(), run);
-			causes = rootCauses;
+			HashMap<RootCause, RootCause> rootCauses = new HashMap<RootCause, RootCause>();
+			collectRootCauses(rootCauses, run);
+			causes = rootCauses.values();
 		}
 		return causes;
 	}
 
-	private void collectRootCauses(List<RootCause> rootCauses,
-			Set<String> projectsHandled, Run run) {
+	private void collectRootCauses(Map<RootCause, RootCause> rootCauses, Run run) {
 		CauseAction causeAction = run.getAction(CauseAction.class);
 		Map<Cause, Integer> currentCauses = causeAction.getCauseCounts();
 		RootCause rootCause = null;
 		boolean isLeave = false;
-		projectsHandled.add(run.getParent().getName());
 		for (Entry<Cause, Integer> currentCauseCount : currentCauses.entrySet()) {
 			if (currentCauseCount.getKey() instanceof UpstreamCause) {
 				UpstreamCause uc = (UpstreamCause) currentCauseCount.getKey();
-				if (!projectsHandled.contains(uc.getUpstreamProject())) {
-					AbstractProject p = (AbstractProject) Hudson.getInstance()
-							.getItem(uc.getUpstreamProject());
-					Run upstreamRun = p.getBuildByNumber(uc.getUpstreamBuild());
-					collectRootCauses(rootCauses, projectsHandled, upstreamRun);
-				}
+				// if (!projectsHandled.contains(uc.getUpstreamProject())) {
+				AbstractProject p = (AbstractProject) Hudson.getInstance()
+						.getItem(uc.getUpstreamProject());
+				Run upstreamRun = p.getBuildByNumber(uc.getUpstreamBuild());
+				collectRootCauses(rootCauses, upstreamRun);
+				// }
 
 			} else {
 				if (rootCause == null) {
 					rootCause = new RootCause();
-					rootCauses.add(rootCause);
 					rootCause.setProject(run.getParent().getName());
 					rootCause.setProjectUrl(run.getParent().getUrl());
 					rootCause.setBuild(run.getNumber());
+					if (rootCauses.containsKey(rootCause)) {
+						// There is already such a root cause, we need to merge
+						rootCause = rootCauses.get(rootCause);
+					} else {
+						rootCauses.put(rootCause, rootCause);
+					}
 				}
 				rootCause.getCauseCount().put(currentCauseCount.getKey(),
 						currentCauseCount.getValue());
@@ -150,8 +158,6 @@ public class RootCauseAction implements RunAction {
 		private int build;
 		private Map<Cause, Integer> causeCount = new LinkedHashMap<Cause, Integer>();
 
-	
-
 		public String getProjectUrl() {
 			return projectUrl;
 		}
@@ -166,11 +172,7 @@ public class RootCauseAction implements RunAction {
 			int result = 1;
 			result = prime * result + build;
 			result = prime * result
-					+ ((causeCount == null) ? 0 : causeCount.hashCode());
-			result = prime * result
 					+ ((project == null) ? 0 : project.hashCode());
-			result = prime * result
-					+ ((projectUrl == null) ? 0 : projectUrl.hashCode());
 			return result;
 		}
 
@@ -189,13 +191,6 @@ public class RootCauseAction implements RunAction {
 			if (build != other.build) {
 				return false;
 			}
-			if (causeCount == null) {
-				if (other.causeCount != null) {
-					return false;
-				}
-			} else if (!causeCount.equals(other.causeCount)) {
-				return false;
-			}
 			if (project == null) {
 				if (other.project != null) {
 					return false;
@@ -203,19 +198,13 @@ public class RootCauseAction implements RunAction {
 			} else if (!project.equals(other.project)) {
 				return false;
 			}
-			if (projectUrl == null) {
-				if (other.projectUrl != null) {
-					return false;
-				}
-			} else if (!projectUrl.equals(other.projectUrl)) {
-				return false;
-			}
 			return true;
 		}
 
 	}
 
-	// Overall Todos:.	
-	// TODO Test this plugin in different settings, e.g. Maven instead of Freestyle Projects. Add Testcases
+	// Overall Todos:.
+	// TODO Test this plugin in different settings, e.g. Maven instead of
+	// Freestyle Projects. Add Testcases
 	// TODO Release Plugin, announce
 }
