@@ -33,6 +33,10 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * This Action is attached to a single Run/Build. It contributes a summary.jelly which displays the root causes on the build overview page.
+ *
+ */
 public class RootCauseAction implements RunAction {
 
 	private static final Logger logger = Logger.getLogger(RootCauseAction.class
@@ -46,7 +50,7 @@ public class RootCauseAction implements RunAction {
 	}
 
 	public String getDisplayName() {
-		return "Root Cause";
+		return "This should never be displayed";
 	}
 
 	public String getUrlName() {
@@ -66,38 +70,41 @@ public class RootCauseAction implements RunAction {
 	public void onBuildComplete() {
 		// This is never called , JENKINS-12359
 	}
-	
+
 	/**
-	 * Each Build can have multiple Causes. Each cause can be seen multiple times.
+	 * Each Build can have multiple Causes. Each cause can be seen multiple
+	 * times.
 	 * 
 	 * Multiples are only relevant for leaves.
+	 * 
 	 * @return
 	 */
 	public synchronized List<RootCause> getCauses() {
 		if (causes == null) {
 			List<RootCause> rootCauses = new ArrayList<RootCause>();
-			collectRootCauses(rootCauses , new HashSet<String>(), run);
+			collectRootCauses(rootCauses, new HashSet<String>(), run);
 			causes = rootCauses;
 		}
 		return causes;
 	}
 
-	private void collectRootCauses (List<RootCause> rootCauses, Set<String> projectsHandled, Run run) {
+	private void collectRootCauses(List<RootCause> rootCauses,
+			Set<String> projectsHandled, Run run) {
 		CauseAction causeAction = run.getAction(CauseAction.class);
 		Map<Cause, Integer> currentCauses = causeAction.getCauseCounts();
 		RootCause rootCause = null;
 		boolean isLeave = false;
-		projectsHandled.add (run.getParent().getName());
-		for (Entry <Cause,Integer> currentCauseCount : currentCauses.entrySet()) {
+		projectsHandled.add(run.getParent().getName());
+		for (Entry<Cause, Integer> currentCauseCount : currentCauses.entrySet()) {
 			if (currentCauseCount.getKey() instanceof UpstreamCause) {
-				UpstreamCause uc = (UpstreamCause) currentCauseCount.getKey();				
-				if (!projectsHandled.contains (uc.getUpstreamProject())) {
+				UpstreamCause uc = (UpstreamCause) currentCauseCount.getKey();
+				if (!projectsHandled.contains(uc.getUpstreamProject())) {
 					AbstractProject p = (AbstractProject) Hudson.getInstance()
 							.getItem(uc.getUpstreamProject());
 					Run upstreamRun = p.getBuildByNumber(uc.getUpstreamBuild());
-					collectRootCauses (rootCauses, projectsHandled, upstreamRun);
+					collectRootCauses(rootCauses, projectsHandled, upstreamRun);
 				}
-				
+
 			} else {
 				if (rootCause == null) {
 					rootCause = new RootCause();
@@ -106,14 +113,14 @@ public class RootCauseAction implements RunAction {
 					rootCause.setProjectUrl(run.getParent().getUrl());
 					rootCause.setBuild(run.getNumber());
 				}
-				rootCause.getCauseCount().put(currentCauseCount.getKey(), currentCauseCount.getValue());
+				rootCause.getCauseCount().put(currentCauseCount.getKey(),
+						currentCauseCount.getValue());
 			}
-		} 
+		}
 	}
-	
-	
+
 	public static class RootCause {
-		
+
 		public String getProject() {
 			return project;
 		}
@@ -122,7 +129,6 @@ public class RootCauseAction implements RunAction {
 			this.project = project;
 		}
 
-		 
 		public int getBuild() {
 			return build;
 		}
@@ -139,12 +145,21 @@ public class RootCauseAction implements RunAction {
 			this.causeCount = causeCount;
 		}
 
-		
-
 		private String project;
 		private String projectUrl;
 		private int build;
 		private Map<Cause, Integer> causeCount = new LinkedHashMap<Cause, Integer>();
+
+	
+
+		public String getProjectUrl() {
+			return projectUrl;
+		}
+
+		public void setProjectUrl(String projectUrl) {
+			this.projectUrl = projectUrl;
+		}
+
 		@Override
 		public int hashCode() {
 			final int prime = 31;
@@ -154,6 +169,8 @@ public class RootCauseAction implements RunAction {
 					+ ((causeCount == null) ? 0 : causeCount.hashCode());
 			result = prime * result
 					+ ((project == null) ? 0 : project.hashCode());
+			result = prime * result
+					+ ((projectUrl == null) ? 0 : projectUrl.hashCode());
 			return result;
 		}
 
@@ -186,28 +203,20 @@ public class RootCauseAction implements RunAction {
 			} else if (!project.equals(other.project)) {
 				return false;
 			}
+			if (projectUrl == null) {
+				if (other.projectUrl != null) {
+					return false;
+				}
+			} else if (!projectUrl.equals(other.projectUrl)) {
+				return false;
+			}
 			return true;
 		}
 
-		public String getProjectUrl() {
-			return projectUrl;
-		}
-
-		public void setProjectUrl(String projectUrl) {
-			this.projectUrl = projectUrl;
-		}
-	
-
-		
 	}
-	
-	
+
 	// Overall Todos:
-
-	// TODO Render Project/Build References as link
-	//
-	// TODO Setup Proper Naming / Internationalization for existing Labels
+	// TODO Setup Maven Metadata (License, author/maintainer and so on)	
+	// TODO Create Wiki Page on Jenkins Wiki
 	// TODO Create Github Readme file
-	// TODO Setup Maven Metadata (License, Developer Connection and so on)
-
 }
