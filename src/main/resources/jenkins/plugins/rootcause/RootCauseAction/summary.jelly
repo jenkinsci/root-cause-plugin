@@ -18,7 +18,8 @@
     <t:summary icon="orange-square.gif">
   	<j:forEach var="rootCause" items="${it.causes}">
   		<p>
-   		<span>Root Causes in ${rootCause.project} : Build #${rootCause.build}:</span>
+   		<span>${"%causes_in_project(rootCause.project,rootCause.build,rootCause.projectUrl,rootURL)"}</span>
+   		
    		<table style="margin-left: 2em">
    		<tbody>
    		<j:forEach var="entry" items="${rootCause.causeCount.entrySet()}">

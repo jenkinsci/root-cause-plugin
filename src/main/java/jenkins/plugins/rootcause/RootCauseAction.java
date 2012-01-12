@@ -103,6 +103,7 @@ public class RootCauseAction implements RunAction {
 					rootCause = new RootCause();
 					rootCauses.add(rootCause);
 					rootCause.setProject(run.getParent().getName());
+					rootCause.setProjectUrl(run.getParent().getUrl());
 					rootCause.setBuild(run.getNumber());
 				}
 				rootCause.getCauseCount().put(currentCauseCount.getKey(), currentCauseCount.getValue());
@@ -121,6 +122,7 @@ public class RootCauseAction implements RunAction {
 			this.project = project;
 		}
 
+		 
 		public int getBuild() {
 			return build;
 		}
@@ -140,6 +142,7 @@ public class RootCauseAction implements RunAction {
 		
 
 		private String project;
+		private String projectUrl;
 		private int build;
 		private Map<Cause, Integer> causeCount = new LinkedHashMap<Cause, Integer>();
 		@Override
@@ -185,6 +188,14 @@ public class RootCauseAction implements RunAction {
 			}
 			return true;
 		}
+
+		public String getProjectUrl() {
+			return projectUrl;
+		}
+
+		public void setProjectUrl(String projectUrl) {
+			this.projectUrl = projectUrl;
+		}
 	
 
 		
@@ -195,7 +206,6 @@ public class RootCauseAction implements RunAction {
 
 	// TODO Render Project/Build References as link
 	//
-	// TODO Check Persistent behaviour / xml Files, Remove FullClassnames
 	// TODO Setup Proper Naming / Internationalization for existing Labels
 	// TODO Create Github Readme file
 	// TODO Setup Maven Metadata (License, Developer Connection and so on)
