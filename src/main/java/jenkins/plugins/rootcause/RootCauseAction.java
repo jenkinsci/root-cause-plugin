@@ -216,7 +216,6 @@ public class RootCauseAction implements RunAction {
 	}
 
 	// Overall Todos:.	
-	// TODO Create Github Readme file
 	// TODO Test this plugin in different settings, e.g. Maven instead of Freestyle Projects. Add Testcases
 	// TODO Release Plugin, announce
 }
