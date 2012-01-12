@@ -7,6 +7,8 @@
 		<version>1.399</version><!-- which version of Jenkins is this plugin built 
 			against? -->
 	</parent>
+	
+	<url>http://wiki.jenkins-ci.org/display/JENKINS/Root+Cause+Plugin</url>
 
 	<groupId>de.innoq.jenkins.rootcause</groupId>
 	<artifactId>rootcause</artifactId>
