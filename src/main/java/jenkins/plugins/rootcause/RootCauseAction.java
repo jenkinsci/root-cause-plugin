@@ -215,8 +215,7 @@ public class RootCauseAction implements RunAction {
 
 	}
 
-	// Overall Todos:
-	// TODO Setup Maven Metadata (License, author/maintainer and so on)	
+	// Overall Todos:	
 	// TODO Create Wiki Page on Jenkins Wiki
 	// TODO Create Github Readme file
 }
